@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: items
+  labels:
+    app: items
+spec:
+  type: ClusterIP
+  selector:
+    app: items
+  ports:
+    - port: 3003
+      targetPort: 3003

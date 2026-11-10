@@ -1,10 +1,13 @@
 client/node_modules
-mobile/node_modules
 server/node_modules
 client/.env
-mobile/.env
-server/.env
 backend/*/.env
 backend/*/node_modules
-mobile/.expo
 build
+terra_infra/.terraform
+terra_infra/terraform.tfstate
+terra_infra/terraform.tfstate.backup
+terra_infra/.terraform.lock.hcl
+terra_infra/*.tfstate
+terra_infra/*.tfstate.backup
+terra_infra/terraform.tfstate.d/

@@ -1,0 +1,21 @@
+kubectl apply -f ./k8s_infra/secrets.yaml
+kubectl apply -f ./k8s_infra/mongo_service.yaml -f ./k8s_infra/mongo_statefulset.yaml
+kubectl rollout status statefulset/mongo
+kubectl apply -f ./k8s_infra/auth_deployment.yaml -f ./k8s_infra/auth_service.yaml \
+              -f ./k8s_infra/discount_deployment.yaml -f ./k8s_infra/discount_service.yaml \
+              -f ./k8s_infra/items_deployment.yaml -f ./k8s_infra/items_service.yaml \
+              -f ./k8s_infra/client_deployment.yaml -f ./k8s_infra/client_service.yaml \
+              -f ./k8s_infra/ingress.yaml
+
+
+docker buildx build --platform linux/amd64 -t neonluft/restauranty-auth:latest . &&
+docker push -t neonluft/restauranty-auth:latest
+
+docker buildx build --platform linux/amd64 -t neonluft/restauranty-items:latest . &&
+docker push neonluft/restauranty-items:latest
+
+docker buildx build --platform linux/amd64 -t neonluft/restauranty-client:latest . &&
+docker push neonluft/restauranty-client:latest
+
+docker buildx build --platform linux/amd64 -t neonluft/restauranty-discount:latest . &&
+docker push neonluft/restauranty-discount:latest
