@@ -101,7 +101,6 @@ jobs:
     needs: build-push
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
-    environment: production   # optional: add required reviewers in repo settings for manual approval
     permissions:
       id-token: write         # needed for OIDC
       contents: read
