@@ -1,0 +1,136 @@
+name: CI/CD
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Never run two deployments at the same time
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  K8S_DIR: k8s_infra
+
+jobs:
+  # ---------------------------------------------------------------
+  # CI: runs on every pull request and every push
+  # ---------------------------------------------------------------
+  ci:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [backend/auth, backend/discounts, backend/items, client]
+    defaults:
+      run:
+        working-directory: ${{ matrix.service }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ${{ matrix.service }}/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build --if-present
+        env:
+          CI: "false"   # CRA treats warnings as errors when CI=true
+
+      - name: Test
+        run: npm test --if-present
+        env:
+          CI: "true"    # makes react-scripts run tests once, not in watch mode
+
+  # ---------------------------------------------------------------
+  # CD step 1: build and push images (main branch only, after CI)
+  # ---------------------------------------------------------------
+  build-push:
+    needs: ci
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - name: auth
+            context: backend/auth
+          - name: discounts
+            context: backend/discounts
+          - name: items
+            context: backend/items
+          - name: client
+            context: client
+            build_args: REACT_APP_SERVER_URL=
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          platforms: linux/amd64
+          push: true
+          build-args: ${{ matrix.build_args }}
+          tags: |
+            ${{ vars.DOCKERHUB_USERNAME }}/restauranty-${{ matrix.name }}:${{ github.sha }}
+            ${{ vars.DOCKERHUB_USERNAME }}/restauranty-${{ matrix.name }}:latest
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  # ---------------------------------------------------------------
+  # CD step 2: deploy to EKS
+  # ---------------------------------------------------------------
+  deploy:
+    needs: build-push
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment: production   # optional: add required reviewers in repo settings for manual approval
+    permissions:
+      id-token: write         # needed for OIDC
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name "${{ vars.EKS_CLUSTER_NAME }}" --region "${{ vars.AWS_REGION }}"
+
+      - name: Apply manifests
+        run: kubectl apply -f "$K8S_DIR" --recursive
+
+      - name: Roll out the new images (tagged with the commit SHA)
+        run: |
+          IMG="${{ vars.DOCKERHUB_USERNAME }}/restauranty"
+          TAG="${{ github.sha }}"
+          kubectl set image deployment/auth      '*'=$IMG-auth:$TAG
+          kubectl set image deployment/discounts '*'=$IMG-discounts:$TAG
+          kubectl set image deployment/items     '*'=$IMG-items:$TAG
+          kubectl set image deployment/client    '*'=$IMG-client:$TAG
+
+      - name: Wait for the rollouts
+        run: |
+          for d in auth discounts items client; do
+            kubectl rollout status deployment/$d --timeout=180s
+          done
