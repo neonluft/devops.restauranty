@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: client
-          image: neonluft/restauranty-client:latest
+          image: neonluft/restauranty-client:v2
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000   # nginx; use 3000 if you chose the `serve` variant
