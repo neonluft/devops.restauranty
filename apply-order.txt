@@ -8,14 +8,14 @@ kubectl apply -f ./k8s_infra/auth_deployment.yaml -f ./k8s_infra/auth_service.ya
               -f ./k8s_infra/ingress.yaml
 
 
-docker buildx build --platform linux/amd64 -t neonluft/restauranty-auth:latest . &&
-docker push -t neonluft/restauranty-auth:latest
+docker buildx build --platform linux/amd64 -t neonluft/restauranty-auth:xxx . &&
+docker push -t neonluft/restauranty-auth:xxx
 
-docker buildx build --platform linux/amd64 -t neonluft/restauranty-items:latest . &&
-docker push neonluft/restauranty-items:latest
+docker buildx build --platform linux/amd64 -t neonluft/restauranty-items:xx . &&
+docker push neonluft/restauranty-items:xxx
 
-docker buildx build --platform linux/amd64 -t neonluft/restauranty-client:latest . &&
-docker push neonluft/restauranty-client:latest
+docker buildx build --platform linux/amd64 -t neonluft/restauranty-client:xxx . &&
+docker push neonluft/restauranty-client:xxx
 
-docker buildx build --platform linux/amd64 -t neonluft/restauranty-discount:latest . &&
-docker push neonluft/restauranty-discount:latest
+docker buildx build --platform linux/amd64 -t neonluft/restauranty-discount:xxx . &&
+docker push neonluft/restauranty-discount:xxx
