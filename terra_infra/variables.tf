@@ -40,7 +40,7 @@ variable "endpoint_public_access_cidrs" {
 variable "instance_types" {
   description = "EC2 instance types for the worker nodes."
   type        = list(string)
-  default     = ["t3.medium"]
+  default     = ["t3.large"]
 }
 
 variable "capacity_type" {

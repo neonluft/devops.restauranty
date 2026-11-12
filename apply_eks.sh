@@ -13,6 +13,28 @@ kubectl rollout status statefulset/mongo
 kubectl apply -f ./k8s_infra/auth_deployment.yaml -f ./k8s_infra/auth_service.yaml \
               -f ./k8s_infra/discount_deployment.yaml -f ./k8s_infra/discount_service.yaml \
               -f ./k8s_infra/items_deployment.yaml -f ./k8s_infra/items_service.yaml \
-              -f ./k8s_infra/client_deployment.yaml -f ./k8s_infra/client_service.yaml \
-              -f ./k8s_infra/ingress.yaml
+              -f ./k8s_infra/client_deployment.yaml -f ./k8s_infra/client_service.yaml 
 
+
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
+  -n monitoring --create-namespace
+
+helm repo add grafana-community https://grafana-community.github.io/helm-charts
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+
+helm upgrade --install loki grafana-community/loki -n monitoring \
+  -f monitoring/loki-values.yaml --wait --timeout 5m
+
+helm upgrade --install alloy grafana/alloy -n monitoring \
+  -f monitoring/alloy-values.yaml
+
+kubectl apply -f monitoring/loki-datasource.yaml
+
+helm repo add jetstack https://charts.jetstack.io && helm repo update
+helm upgrade --install cert-manager jetstack/cert-manager \
+     -n cert-manager --create-namespace --set crds.enabled=true --wait
+
+kubectl apply -f ./k8s_infra/cluster-issuer.yaml \
+              -f ./k8s_infra/ingress-tls.yaml

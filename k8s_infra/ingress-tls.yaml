@@ -3,12 +3,18 @@ kind: Ingress
 metadata:
   name: restauranty
   namespace: default
-  # No rewrite-target: the services expect the full /api/... path,
-  # exactly as HAProxy forwarded it locally.
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-staging  # switch to letsencrypt-prod once it works
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"      # HTTP -> HTTPS
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - florik.ironlabs.online           # your real hostname
+      secretName: restauranty-tls    # cert-manager creates this Secret
   rules:
-    - http:                      # no host: matches the NLB DNS name directly
+    - host: florik.ironlabs.online          # your real hostname (a certificate needs a DNS name)
+      http:
         paths:
           - path: /api/auth
             pathType: Prefix
@@ -35,6 +41,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: client
+                name: client         # must match your frontend Service name
                 port:
-                  number: 3000
+                  number: 3000       # and its port

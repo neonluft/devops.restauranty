@@ -12,3 +12,4 @@ terra_infra/*.tfstate
 terra_infra/*.tfstate.backup
 terra_infra/terraform.tfstate.d/
 k8s_infra/secrets.yaml
+zzz_everything_else
