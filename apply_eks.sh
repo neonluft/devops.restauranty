@@ -36,5 +36,5 @@ helm repo add jetstack https://charts.jetstack.io && helm repo update
 helm upgrade --install cert-manager jetstack/cert-manager \
      -n cert-manager --create-namespace --set crds.enabled=true --wait
 
-kubectl apply -f ./k8s_infra/cluster-issuer.yaml \
+kubectl apply -f ./k8s_infra_not_for_pipeline/cluster-issuer.yaml \
               -f ./k8s_infra/ingress-tls.yaml
