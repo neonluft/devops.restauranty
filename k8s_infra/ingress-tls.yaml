@@ -4,7 +4,7 @@ metadata:
   name: restauranty
   namespace: default
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-staging  # switch to letsencrypt-prod once it works
+    cert-manager.io/cluster-issuer: letsencrypt-prod  # switch to letsencrypt-prod once it works
     nginx.ingress.kubernetes.io/ssl-redirect: "true"      # HTTP -> HTTPS
 spec:
   ingressClassName: nginx
